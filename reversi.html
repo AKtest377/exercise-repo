@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>シンプル・オセロ</title>
+    <style>
+        body { background: #2c3e50; color: white; text-align: center; font-family: sans-serif; }
+        #status { font-size: 1.5rem; margin-bottom: 10px; }
+        #board { 
+            display: grid; grid-template-columns: repeat(8, 50px); 
+            grid-template-rows: repeat(8, 50px); gap: 2px; 
+            justify-content: center; background: #1a1a1a; padding: 5px; margin: 0 auto;
+            width: fit-content; border: 4px solid #1a1a1a;
+        }
+        .cell { 
+            background: #27ae60; width: 50px; height: 50px; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .disc { width: 40px; height: 40px; border-radius: 50%; display: none; }
+        .disc.black { display: block; background: #000; }
+        .disc.white { display: block; background: #fff; }
+    </style>
+</head>
+<body>
+    <h1>OTHELLO</h1>
+    <div id="status">黒の番です</div>
+    <div id="board"></div>
+
+    <script>
+        const boardElement = document.getElementById('board');
+        const statusElement = document.getElementById('status');
+        let turn = 1; // 1: 黒, 2: 白
+        let board = Array(8).fill().map(() => Array(8).fill(0));
+
+        function init() {
+            // 初期配置
+            board[3][3] = 2; board[4][4] = 2;
+            board[3][4] = 1; board[4][3] = 1;
+            draw();
+        }
+
+        function draw() {
+            boardElement.innerHTML = '';
+            board.forEach((row, r) => {
+                row.forEach((value, c) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    const disc = document.createElement('div');
+                    disc.className = 'disc' + (value === 1 ? ' black' : value === 2 ? ' white' : '');
+                    cell.appendChild(disc);
+                    cell.onclick = () => placeDisc(r, c);
+                    boardElement.appendChild(cell);
+                });
+            });
+            statusElement.innerText = (turn === 1 ? "黒" : "白") + "の番です";
+        }
+
+        function placeDisc(r, c) {
+            if (board[r][c] !== 0) return;
+            const flipList = getFlipList(r, c, turn);
+            if (flipList.length === 0) return;
+
+            board[r][c] = turn;
+            flipList.forEach(([fr, fc]) => board[fr][fc] = turn);
+            
+            turn = 3 - turn; // ターン交代 (1->2, 2->1)
+            draw();
+            
+            // パス判定や終了判定を入れるとより本格的になります
+        }
+
+        function getFlipList(r, c, currentTurn) {
+            const opponent = 3 - currentTurn;
+            const directions = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+            let totalFlip = [];
+
+            directions.forEach(([dr, dc]) => {
+                let tempFlip = [];
+                let nr = r + dr, nc = c + dc;
+                while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && board[nr][nc] === opponent) {
+                    tempFlip.push([nr, nc]);
+                    nr += dr; nc += dc;
+                }
+                if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && board[nr][nc] === currentTurn) {
+                    totalFlip = totalFlip.concat(tempFlip);
+                }
+            });
+            return totalFlip;
+        }
+
+        init();
+    </script>
+<a href="index.html">マインスイーパーへ</a>
+<a href="tetris.html">テトリスへ</a>
+</body>
+</html>
