@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>シンプル・マインスイーパー</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f0f0f0; }
+        #board { 
+            display: grid; 
+            grid-template-columns: repeat(10, 30px); 
+            gap: 2px; 
+            justify-content: center; 
+            margin-top: 20px;
+        }
+        .cell {
+            width: 30px; height: 30px;
+            background: #bbb;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; cursor: pointer; border-radius: 2px;
+        }
+        .cell.revealed { background: #eee; cursor: default; }
+        .cell.mine { background: red; }
+    </style>
+</head>
+<body>
+    <h1>Minesweeper</h1>
+    <div id="board"></div>
+
+    <script>
+        const SIZE = 10;   // 10x10の盤面
+        const MINES = 15;  // 地雷の数
+        const boardElement = document.getElementById('board');
+        let board = [];
+
+        // 1. 盤面の初期化
+        function init() {
+            const cells = Array(SIZE * SIZE).fill(0);
+            // 地雷をランダムに配置
+            let placed = 0;
+            while (placed < MINES) {
+                let idx = Math.floor(Math.random() * cells.length);
+                if (cells[idx] !== 'M') { cells[idx] = 'M'; placed++; }
+            }
+
+            // 2. HTML要素の生成
+            boardElement.innerHTML = '';
+            for (let i = 0; i < SIZE * SIZE; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.addEventListener('click', () => reveal(i));
+                // 右クリックで旗（簡易版）
+                cell.oncontextmenu = (e) => { e.preventDefault(); cell.innerText = cell.innerText === '🚩' ? '' : '🚩'; };
+                boardElement.appendChild(cell);
+                board.push({ element: cell, value: cells[i], revealed: false });
+            }
+        }
+
+        // 3. マスを開く処理
+        function reveal(idx) {
+            const c = board[idx];
+            if (c.revealed || c.element.innerText === '🚩') return;
+
+            c.revealed = true;
+            c.element.classList.add('revealed');
+
+            if (c.value === 'M') {
+                c.element.classList.add('mine');
+                alert('ゲームオーバー！');
+                location.reload();
+                return;
+            }
+
+            // 周囲の地雷を数える
+            const mineCount = getSurroundingMines(idx);
+            if (mineCount > 0) {
+                c.element.innerText = mineCount;
+            } else {
+                // 0なら周囲を再帰的に開く
+                getNeighbors(idx).forEach(nIdx => reveal(nIdx));
+            }
+        }
+
+        // 周囲のインデックスを取得
+        function getNeighbors(idx) {
+            const neighbors = [];
+            const r = Math.floor(idx / SIZE), c = idx % SIZE;
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    const nr = r + dr, nc = c + dc;
+                    if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && !(dr === 0 && dc === 0)) {
+                        neighbors.push(nr * SIZE + nc);
+                    }
+                }
+            }
+            return neighbors;
+        }
+
+        function getSurroundingMines(idx) {
+            return getNeighbors(idx).filter(nIdx => board[nIdx].value === 'M').length;
+        }
+
+        init();
+    </script>
+</body>
+</html>
